@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Main">
+	<select id="selectBoardList" resultType="boardVO">
+		SELECT B.*
+		FROM(
+			SELECT A.*, ROW_NUMBER() OVER(ORDER BY A.BO_NO DESC) RNUM
+			FROM(
+				SELECT
+					BO_NO, BO_TITLE, BO_CONTENT, BO_WRITER, BO_DATE, BO_HIT
+				FROM BOARD
+				WHERE 1=1
+				ORDER BY BO_NO DESC
+		) A
+	)B
+		<![CDATA[
+			WHERE RNUM <= 5
+		]]>
+	</select>
+	
+	<!-- 메인화면 각 게시판 TotalRecord 수 가져오기 -->
+	<select id="selectAllCount" resultType="hashMap">
+		SELECT
+			(SELECT COUNT(BO_NO) FROM BOARD) boardCnt, 
+			(SELECT COUNT(NOTICE_NO) FROM NOTICE) noticeCnt, 
+			(SELECT COUNT(FREE_NO) FROM FREE) freeCnt
+		FROM DUAL
+	</select>
+</mapper>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Free">
+	<sql id="freeSearch">
+		<if test="searchType != null and searchType == 'title'">
+			AND (FREE_TITLE LIKE '%' || #{searchWord} || '%')
+		</if>
+		<if test="searchType != null and searchType == 'writer'">
+			AND (FREE_WRITER LIKE '%' || #{searchWord} || '%')
+		</if>
+	</sql>  
+	<insert id="insertFree" parameterType="freeVO" useGeneratedKeys="true">
+		<selectKey keyProperty="freeNo" resultType="int" order="BEFORE">
+			SELECT SEQ_FREE.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO FREE(
+			FREE_NO, FREE_TITLE, FREE_CONTENT, FREE_WRITER, FREE_DATE
+		)VALUES(
+			#{freeNo}, #{freeTitle}, #{freeContent}, #{freeWriter}, SYSDATE
+		)
+	</insert>
+	
+	<update id="incrementByHit" parameterType="int">
+		UPDATE FREE
+		SET
+			FREE_HIT = FREE_HIT + 1
+		WHERE FREE_NO = #{freeNo}
+	</update>
+	
+	<select id="selectFree" parameterType="int" resultType="freeVO">
+		SELECT
+			FREE_NO, FREE_TITLE, FREE_CONTENT, FREE_WRITER, FREE_DATE, FREE_HIT
+		FROM FREE
+		WHERE FREE_NO = #{freeNo}
+	</select>
+	
+	<select id="selectFreeList_" resultType="freeVO">
+		SELECT
+			FREE_NO, FREE_TITLE, FREE_CONTENT, FREE_WRITER, FREE_DATE, FREE_HIT
+		FROM FREE
+	</select>
+	
+	<select id="selectFreeCount" parameterType="pagingVO" resultType="int">
+		SELECT COUNT(FREE_NO)
+		FROM FREE
+		WHERE 1 = 1
+		<include refid="freeSearch"/>
+	</select>
+	
+	<select id="selectFreeList" parameterType="pagingVO" resultType="freeVO">
+		SELECT
+			B.*
+		FROM(
+			SELECT 
+				A.*, ROW_NUMBER() OVER(ORDER BY A.FREE_NO DESC) RNUM
+			FROM(
+				SELECT
+					FREE_NO, FREE_TITLE, FREE_CONTENT, FREE_WRITER, FREE_DATE, FREE_HIT
+				FROM FREE
+				WHERE 1 = 1
+				<include refid="freeSearch"/>
+				ORDER BY FREE_NO DESC
+			) A
+		)B
+		<![CDATA[
+			WHERE B.RNUM >= #{startRow} AND B.RNUM <= #{endRow}
+		]]>
+	</select>
+	<update id="updateFree" parameterType="freeVO">
+      UPDATE FREE
+      SET
+         FREE_TITLE = #{freeTitle},   
+         FREE_CONTENT = #{freeContent},   
+         FREE_DATE = sysdate   
+      WHERE FREE_NO = #{freeNo}
+   </update>
+   
+   <delete id="deleteFree" parameterType="int">
+      DELETE FROM FREE
+      WHERE FREE_NO = #{freeNo}
+   </delete>
+</mapper>

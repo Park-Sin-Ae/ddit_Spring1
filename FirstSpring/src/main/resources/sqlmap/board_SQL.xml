@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Board">
+	<sql id="boardSearch">
+		<if test="searchType != null and searchType == 'title'">
+			AND (BO_TITLE LIKE '%' || #{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'writer'">
+			AND (BO_WRITER LIKE '%' || #{searchWord}||'%')
+		</if>
+	</sql>
+	<insert id="insertBoard" parameterType="boardVO" useGeneratedKeys="true">
+		<selectKey keyProperty="boNo" resultType="int" order="BEFORE">
+			SELECT SEQ_BOARD.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO BOARD(
+			BO_NO, BO_TITLE, BO_CONTENT, BO_WRITER, BO_DATE
+		)VALUES(
+			#{boNo}, #{boTitle}, #{boContent}, #{boWriter}, SYSDATE
+		)
+		<!-- 테이블 생성 시 bo_hit는 0, default 값으로 주었기 때문에 쿼리문에 넣을 필요 없음 -->
+	</insert>
+	
+	<update id="incrementByHit" parameterType="int">
+		UPDATE BOARD
+		SET
+			BO_HIT = BO_HIT + 1
+		WHERE BO_NO = #{boNo}
+	</update>
+	
+	<select id="selectBoard" parameterType="int" resultType="boardVO">
+		SELECT
+			BO_NO, BO_TITLE, BO_CONTENT, BO_WRITER, BO_DATE, BO_HIT
+		FROM BOARD
+		WHERE BO_NO = #{boNo}
+	</select>
+	
+	<select id="selectBoardList_" resultType="boardVO">
+		SELECT
+			BO_NO, BO_TITLE, BO_CONTENT, BO_WRITER, BO_DATE, BO_HIT
+		FROM BOARD
+	</select>
+	
+	<select id="selectBoardCount" parameterType="pagingVO" resultType="int">
+		SELECT COUNT(BO_NO)
+		FROM BOARD
+		WHERE 1 = 1
+		<include refid="boardSearch"/>
+	</select>
+	
+	<select id="selectBoardList" parameterType="pagingVO" resultType="boardVO">
+		SELECT
+			B.*
+		FROM(
+			SELECT 
+				A.*, ROW_NUMBER() OVER(ORDER BY A.BO_NO DESC) RNUM
+			FROM(
+				SELECT
+					BO_NO, BO_TITLE, BO_CONTENT, BO_WRITER, BO_DATE, BO_HIT
+				FROM BOARD
+				WHERE 1 = 1
+				<include refid="boardSearch"/>
+				ORDER BY BO_NO DESC
+			) A
+		)B
+		<![CDATA[
+			WHERE B.RNUM >= #{startRow} AND B.RNUM <= #{endRow}
+		]]>
+	</select>
+	<update id="updateBoard" parameterType="boardVO">
+      UPDATE BOARD
+      SET
+         BO_TITLE = #{boTitle},   
+         BO_CONTENT = #{boContent},   
+         BO_DATE = sysdate   
+      WHERE BO_NO = #{boNo}
+   </update>
+   
+   <delete id="deleteBoard" parameterType="int">
+      DELETE FROM BOARD
+      WHERE BO_NO = #{boNo}
+   </delete>
+</mapper>
